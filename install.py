@@ -2,13 +2,12 @@
 """
 StartMenu setup script — run once after installing the package.
 
-    python3 setup.py
+    startmenu-setup
 
 What it does:
-  1. Creates ~/.local/share/applications/startmenu.desktop so StartMenu
-     appears in the Cinnamon app menu and can be dragged to Plank.
-  2. Creates a Nemo action so you can right-click any file or folder in
-     the file manager and pin it to StartMenu.
+  1. Creates ~/.local/share/applications/startmenu.desktop.
+  2. Creates a Nemo action for right-click pinning.
+  3. Adds a Plank dock item so the launcher appears on the dock.
 """
 
 import shutil
@@ -59,6 +58,28 @@ def create_desktop_file() -> None:
     print("  → Find 'StartMenu' in the Cinnamon app menu and drag it onto Plank.")
 
 
+def add_to_plank() -> None:
+    print()
+    print("── Plank dock ────────────────────────────────────────────────────")
+    plank_dir = Path.home() / ".config" / "plank"
+    docks = sorted(plank_dir.glob("dock*/launchers")) if plank_dir.exists() else []
+    if not docks:
+        print("  Plank config not found — skipping.")
+        return
+    answer = input("  Add StartMenu to Plank? [y/N]  ").strip().lower()
+    if answer != "y":
+        print("  Skipped.")
+        return
+    for launchers_dir in docks:
+        dockitem = launchers_dir / "startmenu.dockitem"
+        dockitem.write_text(
+            "[PlankDockItemPreferences]\n"
+            f"Launcher=file://{DESKTOP_FILE}\n"
+        )
+        print(f"  ✓ {dockitem}")
+    print("  → Restart Plank (or log out/in) if the icon doesn't appear immediately.")
+
+
 def create_nemo_action() -> None:
     print()
     print("── Creating Nemo action ──────────────────────────────────────────")
@@ -84,6 +105,7 @@ def main() -> None:
     print()
     create_desktop_file()
     create_nemo_action()
+    add_to_plank()
     print()
     print("═══════════════════════ Done ═══════════════════════════")
     print()
