@@ -7,6 +7,10 @@ from gi.repository import Gtk, Gdk, GLib
 _TICK_MS = 16   # ~60 fps
 
 
+def _ease_out_expo(t: float) -> float:
+    return 1.0 if t >= 1.0 else 1.0 - 2.0 ** (-10.0 * t)
+
+
 def _ease_out_cubic(t: float) -> float:
     return 1.0 - (1.0 - t) ** 3
 
@@ -98,27 +102,35 @@ class StartWindow(Gtk.ApplicationWindow):
         self._closing     = False
         self._anim_frame  = 0
         self._open_frames = max(1, settings.anim_open_ms // _TICK_MS)
+        self._slide_px    = settings.anim_slide_px
         x, y = self._final_pos()
+        self._anim_x, self._anim_y = x, y
+        # Set opacity and position BEFORE show()/present() so the window never
+        # appears at its resting position before sliding — that's what caused
+        # the visible "jump down then up" on each open.
+        if settings.anim_enabled:
+            self.set_opacity(0.0)
+            self.move(x, y + self._slide_px)
+        else:
+            self.set_opacity(1.0)
+            self.move(x, y)
         if not self.is_visible():
             self.show()
             self.present()
-        # Position at final location before showing — no mid-animation moves.
-        # Moving a window every tick through X11/Mutter is the main source of jank.
-        self.move(x, y)
         if settings.anim_enabled:
-            self.set_opacity(0.0)
             self._anim_id = GLib.timeout_add(_TICK_MS, self._tick_open)
-        else:
-            self.set_opacity(1.0)
         return False  # usable as a one-shot GLib callback
 
     def _tick_open(self) -> bool:
         self._anim_frame += 1
         t = min(self._anim_frame / self._open_frames, 1.0)
+        x, y = self._anim_x, self._anim_y
         self.set_opacity(_ease_out_cubic(t))
+        self.move(x, y + int(self._slide_px * (1.0 - _ease_out_expo(t))))
         if t >= 1.0:
             self._anim_id = None
             self.set_opacity(1.0)
+            self.move(x, y)
             return False
         return True
 
@@ -129,6 +141,9 @@ class StartWindow(Gtk.ApplicationWindow):
         self._closing      = True
         self._anim_frame   = 0
         self._close_frames = max(1, settings.anim_close_ms // _TICK_MS)
+        self._slide_px     = settings.anim_slide_px
+        x, y = self._final_pos()
+        self._anim_x, self._anim_y = x, y
         if not settings.anim_enabled:
             self._closing = False
             self.hide()
@@ -138,12 +153,15 @@ class StartWindow(Gtk.ApplicationWindow):
     def _tick_close(self) -> bool:
         self._anim_frame += 1
         t = min(self._anim_frame / self._close_frames, 1.0)
+        x, y = self._anim_x, self._anim_y
         self.set_opacity(1.0 - _ease_in_cubic(t))
+        self.move(x, y + int(self._slide_px * 0.5 * _ease_in_cubic(t)))
         if t >= 1.0:
             self._anim_id = None
             self._closing = False
             self.hide()
-            self.set_opacity(1.0)
+            # Leave opacity at ~0 — _start_open_anim sets it before the next show(),
+            # so resetting to 1.0 here would cause a 1-frame flash on reopen.
             return False
         return True
 
