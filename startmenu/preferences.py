@@ -1,5 +1,8 @@
 import json
+import os
+import shutil
 import subprocess
+import sys
 import threading
 import urllib.request
 
@@ -314,16 +317,26 @@ class PreferencesDialog(Gtk.Dialog):
         GLib.idle_add(self._on_update_done, result.returncode == 0)
 
     def _on_update_done(self, success: bool) -> bool:
-        self._update_btn.set_sensitive(True)
-        self._update_btn.set_label("Check for updates")
         if success:
             self._update_status.set_markup(
-                '<span foreground="green">✓ Updated! Restart StartMenu to apply.</span>'
+                '<span foreground="green">✓ Updated! Restarting…</span>'
             )
+            GLib.timeout_add(800, self._restart)
         else:
+            self._update_btn.set_sensitive(True)
+            self._update_btn.set_label("Check for updates")
             self._update_status.set_markup(
                 '<span foreground="red">Update failed. Try pip3 install manually.</span>'
             )
+        return False
+
+    def _restart(self) -> bool:
+        self.destroy()
+        cmd = shutil.which("startmenu")
+        if cmd:
+            os.execv(cmd, [cmd])
+        else:
+            os.execv(sys.executable, [sys.executable, "-m", "startmenu"])
         return False
 
     # ── Widget helpers ────────────────────────────────────────────────
