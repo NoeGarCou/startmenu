@@ -16,12 +16,16 @@ class PowerStrip(Gtk.Box):
     All buttons are icon-only with tooltips.
     """
 
-    def __init__(self, *, on_prefs):
+    def __init__(self, *, on_prefs, on_refresh):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_name("power-strip")
 
         self.pack_start(
             self._btn("preferences-system-symbolic", "Preferences", on_prefs),
+            False, False, 0,
+        )
+        self.pack_start(
+            self._btn("view-refresh-symbolic", "Refresh app list", on_refresh),
             False, False, 0,
         )
 

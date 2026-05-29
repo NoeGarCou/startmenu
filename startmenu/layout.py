@@ -35,7 +35,7 @@ class StartLayout(Gtk.Box):
             on_launch=on_launch,
             on_pin_changed=self._on_pin_changed,
         )
-        power_strip = PowerStrip(on_prefs=on_prefs)
+        power_strip = PowerStrip(on_prefs=on_prefs, on_refresh=self._on_apps_changed)
 
         self._app_list.set_size_request(settings.list_width, -1)
         # Prevent hexpand from propagating upward from child labels,
