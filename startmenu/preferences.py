@@ -213,14 +213,6 @@ class PreferencesDialog(Gtk.Dialog):
         self._spin_close_ms.set_tooltip_text("How long the close animation takes.")
         g.attach(self._spin_close_ms, 1, 2, 1, 1)
 
-        g.attach(self._lbl("Slide distance (px)"), 0, 3, 1, 1)
-        self._spin_slide = Gtk.SpinButton.new_with_range(0, 120, 1)
-        self._spin_slide.set_value(settings.anim_slide_px)
-        self._spin_slide.set_tooltip_text(
-            "How far the window rises on open / falls on close. 0 = fade only."
-        )
-        g.attach(self._spin_slide, 1, 3, 1, 1)
-
         return self._tab_wrap(g)
 
     def _build_about_tab(self) -> Gtk.Widget:
@@ -396,7 +388,6 @@ class PreferencesDialog(Gtk.Dialog):
         settings.anim_enabled       = self._switch_anim.get_active()
         settings.anim_open_ms       = int(self._spin_open_ms.get_value())
         settings.anim_close_ms      = int(self._spin_close_ms.get_value())
-        settings.anim_slide_px      = int(self._spin_slide.get_value())
 
         settings.save()
         settings.apply_dock_label()
