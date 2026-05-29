@@ -1,9 +1,39 @@
+import json
+import subprocess
+import threading
+import urllib.request
+
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 from .settings import settings
+
+_GITHUB_REPO = "NoeGarCou/startmenu"
+
+
+def _installed_commit() -> str | None:
+    """Return the git commit hash the installed package was built from, or None."""
+    try:
+        from importlib.metadata import distribution
+        raw = distribution("startmenu").read_text("direct_url.json")
+        if raw:
+            return json.loads(raw).get("vcs_info", {}).get("commit_id")
+    except Exception:
+        pass
+    return None
+
+
+def _latest_commit() -> str | None:
+    """Fetch the latest commit hash on main from GitHub. Returns None on any error."""
+    try:
+        url = f"https://api.github.com/repos/{_GITHUB_REPO}/commits/main"
+        req = urllib.request.Request(url, headers={"User-Agent": "StartMenu-Updater"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read())["sha"]
+    except Exception:
+        return None
 
 
 class PreferencesDialog(Gtk.Dialog):
@@ -43,6 +73,7 @@ class PreferencesDialog(Gtk.Dialog):
         nb.append_page(self._build_appearance_tab(), Gtk.Label(label="Appearance"))
         nb.append_page(self._build_sizes_tab(),      Gtk.Label(label="Sizes"))
         nb.append_page(self._build_animation_tab(),  Gtk.Label(label="Animation"))
+        nb.append_page(self._build_about_tab(),      Gtk.Label(label="About"))
 
         self.connect("response", self._on_response)
         self.show_all()
@@ -188,6 +219,112 @@ class PreferencesDialog(Gtk.Dialog):
         g.attach(self._spin_slide, 1, 3, 1, 1)
 
         return self._tab_wrap(g)
+
+    def _build_about_tab(self) -> Gtk.Widget:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        # Version row
+        try:
+            from importlib.metadata import version as pkg_version
+            ver = pkg_version("startmenu")
+        except Exception:
+            ver = "dev"
+        ver_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        ver_row.pack_start(Gtk.Label(label="Version:", halign=Gtk.Align.START), False, False, 0)
+        ver_row.pack_start(Gtk.Label(label=ver, halign=Gtk.Align.START), False, False, 0)
+        box.pack_start(ver_row, False, False, 0)
+
+        # GitHub link
+        link = Gtk.LinkButton(
+            uri=f"https://github.com/{_GITHUB_REPO}",
+            label=f"github.com/{_GITHUB_REPO}",
+        )
+        link.set_halign(Gtk.Align.START)
+        box.pack_start(link, False, False, 0)
+
+        # Update button + status
+        self._update_btn = Gtk.Button(label="Check for updates")
+        self._update_btn.connect("clicked", self._on_check_updates)
+        box.pack_start(self._update_btn, False, False, 0)
+
+        self._update_status = Gtk.Label(label="", halign=Gtk.Align.START)
+        self._update_status.set_line_wrap(True)
+        box.pack_start(self._update_status, False, False, 0)
+
+        return self._tab_wrap(box)
+
+    # ── Update check ──────────────────────────────────────────────────
+
+    def _on_check_updates(self, _btn) -> None:
+        self._update_btn.set_sensitive(False)
+        self._update_btn.set_label("Checking…")
+        self._update_status.set_text("")
+        threading.Thread(target=self._check_thread, daemon=True).start()
+
+    def _check_thread(self) -> None:
+        installed = _installed_commit()
+        latest    = _latest_commit()
+        GLib.idle_add(self._on_check_result, installed, latest)
+
+    def _on_check_result(self, installed: str | None, latest: str | None) -> bool:
+        self._update_btn.set_sensitive(True)
+        self._update_btn.set_label("Check for updates")
+
+        if latest is None:
+            self._update_status.set_markup(
+                '<span foreground="red">Could not reach GitHub. Check your connection.</span>'
+            )
+            return False
+
+        up_to_date = installed and (installed == latest or latest.startswith(installed))
+        if up_to_date:
+            self._update_status.set_markup('<span foreground="green">✓ You\'re up to date.</span>')
+            return False
+
+        self._update_status.set_markup('<span foreground="orange">Update available!</span>')
+        dlg = Gtk.MessageDialog(
+            parent=self, modal=True,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text="Update available",
+        )
+        dlg.format_secondary_text(
+            f"Newer version found (commit {latest[:8]}).\nInstall now?"
+        )
+        if dlg.run() == Gtk.ResponseType.YES:
+            dlg.destroy()
+            self._do_update()
+        else:
+            dlg.destroy()
+        return False
+
+    def _do_update(self) -> None:
+        self._update_btn.set_sensitive(False)
+        self._update_btn.set_label("Updating…")
+        self._update_status.set_text("Installing update in background…")
+        threading.Thread(target=self._update_thread, daemon=True).start()
+
+    def _update_thread(self) -> None:
+        result = subprocess.run(
+            ["pip3", "install", "--user", "--break-system-packages",
+             "--force-reinstall", "--quiet",
+             f"git+https://github.com/{_GITHUB_REPO}.git"],
+            capture_output=True, text=True,
+        )
+        GLib.idle_add(self._on_update_done, result.returncode == 0)
+
+    def _on_update_done(self, success: bool) -> bool:
+        self._update_btn.set_sensitive(True)
+        self._update_btn.set_label("Check for updates")
+        if success:
+            self._update_status.set_markup(
+                '<span foreground="green">✓ Updated! Restart StartMenu to apply.</span>'
+            )
+        else:
+            self._update_status.set_markup(
+                '<span foreground="red">Update failed. Try pip3 install manually.</span>'
+            )
+        return False
 
     # ── Widget helpers ────────────────────────────────────────────────
 
