@@ -371,6 +371,16 @@ class PreferencesDialog(Gtk.Dialog):
         if response != Gtk.ResponseType.APPLY:
             return
 
+        # Commit any in-progress text edits in SpinButtons — GTK doesn't do this
+        # automatically when clicking a button, so get_value() can return stale data.
+        for spin in (
+            self._spin_offset, self._spin_width, self._spin_height, self._spin_list_width,
+            self._spin_tile_icon, self._spin_tile_font,
+            self._spin_list_icon, self._spin_list_font, self._spin_section_font,
+            self._spin_open_ms, self._spin_close_ms, self._spin_slide,
+        ):
+            spin.update()
+
         # Window
         settings.bottom_offset      = int(self._spin_offset.get_value())
         settings.window_width       = int(self._spin_width.get_value())
