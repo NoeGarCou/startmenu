@@ -7,18 +7,17 @@ from gi.repository import Gtk, Gdk, GLib
 _TICK_MS = 16   # ~60 fps
 
 
-def _ease_out_back(t: float) -> float:
-    """Overshoots 1.0 slightly then settles — gives the spring/pop feel."""
-    c = 1.70158
-    return 1.0 + (c + 1.0) * (t - 1.0) ** 3 + c * (t - 1.0) ** 2
+def _ease_out_expo(t: float) -> float:
+    """Sharp deceleration — fast start, settles cleanly with no overshoot."""
+    return 1.0 if t >= 1.0 else 1.0 - 2.0 ** (-10.0 * t)
 
 
-def _ease_out_quad(t: float) -> float:
-    return 1.0 - (1.0 - t) ** 2
+def _ease_out_cubic(t: float) -> float:
+    return 1.0 - (1.0 - t) ** 3
 
 
-def _ease_in_quad(t: float) -> float:
-    return t * t
+def _ease_in_cubic(t: float) -> float:
+    return t * t * t
 
 try:
     import cairo
@@ -60,8 +59,8 @@ class StartWindow(Gtk.ApplicationWindow):
         self.show_all()
         self.set_opacity(0.0)
         self._position()
-        GLib.timeout_add(80,  self._start_open_anim)
-        GLib.timeout_add(380, self._arm_focus_out)
+        GLib.timeout_add(30,  self._start_open_anim)
+        GLib.timeout_add(330, self._arm_focus_out)
 
     # ── Public interface ──────────────────────────────────────────────
 
@@ -105,7 +104,9 @@ class StartWindow(Gtk.ApplicationWindow):
         self._anim_frame = 0
         self._open_frames = max(1, settings.anim_open_ms  // _TICK_MS)
         self._slide_px    = settings.anim_slide_px
+        # Cache positions once — querying screen geometry every tick is wasteful.
         x, y = self._final_pos()
+        self._anim_x, self._anim_y = x, y
         if not self.is_visible():
             self.show()
             self.present()
@@ -120,10 +121,12 @@ class StartWindow(Gtk.ApplicationWindow):
 
     def _tick_open(self) -> bool:
         self._anim_frame += 1
-        t    = min(self._anim_frame / self._open_frames, 1.0)
-        x, y = self._final_pos()
-        self.set_opacity(_ease_out_quad(t))
-        self.move(x, y + int(self._slide_px * (1.0 - _ease_out_back(t))))
+        t = min(self._anim_frame / self._open_frames, 1.0)
+        x, y = self._anim_x, self._anim_y
+        # ease_out_expo for position: fast start, snappy settle, no bounce.
+        # ease_out_cubic for opacity: reaches full visibility quickly.
+        self.set_opacity(_ease_out_cubic(t))
+        self.move(x, y + int(self._slide_px * (1.0 - _ease_out_expo(t))))
         if t >= 1.0:
             self._anim_id = None
             self.set_opacity(1.0)
@@ -139,6 +142,8 @@ class StartWindow(Gtk.ApplicationWindow):
         self._anim_frame   = 0
         self._close_frames = max(1, settings.anim_close_ms // _TICK_MS)
         self._slide_px     = settings.anim_slide_px
+        x, y = self._final_pos()
+        self._anim_x, self._anim_y = x, y
         if not settings.anim_enabled:
             self._closing = False
             self.hide()
@@ -147,10 +152,10 @@ class StartWindow(Gtk.ApplicationWindow):
 
     def _tick_close(self) -> bool:
         self._anim_frame += 1
-        t    = min(self._anim_frame / self._close_frames, 1.0)
-        x, y = self._final_pos()
-        self.set_opacity(1.0 - _ease_in_quad(t))
-        self.move(x, y + int(self._slide_px * 0.5 * _ease_in_quad(t)))
+        t = min(self._anim_frame / self._close_frames, 1.0)
+        x, y = self._anim_x, self._anim_y
+        self.set_opacity(1.0 - _ease_in_cubic(t))
+        self.move(x, y + int(self._slide_px * 0.5 * _ease_in_cubic(t)))
         if t >= 1.0:
             self._anim_id = None
             self._closing = False
