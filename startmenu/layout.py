@@ -1,6 +1,7 @@
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+gi.require_version("Gio", "2.0")
+from gi.repository import Gtk, Gio
 
 from .app_source import load_apps
 from .app_list import AppList
@@ -45,6 +46,10 @@ class StartLayout(Gtk.Box):
         self.pack_start(self._app_list,     False, False, 0)
         self.pack_start(self._pinned_panel, True,  True,  0)
 
+        # Reload the app list automatically when apps are installed or removed.
+        self._app_monitor = Gio.AppInfoMonitor.get()
+        self._app_monitor.connect("changed", self._on_apps_changed)
+
     # ── Public interface ──────────────────────────────────────────────
 
     def focus_search(self) -> None:
@@ -65,3 +70,8 @@ class StartLayout(Gtk.Box):
 
     def _on_pin_changed(self) -> None:
         self._pinned_panel.refresh()
+
+    def _on_apps_changed(self, _monitor) -> None:
+        apps = load_apps()
+        self._pinned_panel._app_map = {a.get_id(): a for a in apps if a.get_id()}
+        self._app_list.reload(apps)

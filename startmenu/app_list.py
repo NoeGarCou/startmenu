@@ -59,6 +59,17 @@ class AppList(Gtk.Box):
                 self._add_app_row(app)
         self._listbox.show_all()
 
+    def reload(self, apps: list) -> None:
+        """Replace the full app list (called when new apps are installed/removed)."""
+        self._letter_groups = {}
+        for app in apps:
+            letter = self._first_letter(app)
+            self._letter_groups.setdefault(letter, []).append(app)
+        self._query = ""
+        self._search.set_text("")
+        self._hovered_row = None
+        self.rebuild()
+
     # ── Construction ─────────────────────────────────────────────────
 
     @staticmethod
