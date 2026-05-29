@@ -37,9 +37,13 @@ sudo apt install python3-pip python3-gi python3-gi-cairo \
                  gir1.2-gio-2.0 gir1.2-gdkpixbuf-2.0
 
 # 2. Install the package
-pip3 install --user git+https://github.com/NoeGarCou/startmenu.git
+# (--break-system-packages is required on Ubuntu 24.04+; safe with --user)
+pip3 install --user --break-system-packages git+https://github.com/NoeGarCou/startmenu.git
 
-# 3. Set up desktop integration (Plank launcher + Nemo context menu)
+# 3. Make sure ~/.local/bin is in PATH (needed if this is a fresh terminal)
+source ~/.profile
+
+# 4. Set up desktop integration (Plank launcher + Nemo context menu)
 startmenu-setup
 ```
 
@@ -53,7 +57,8 @@ sudo apt install python3-pip python3-gi python3-gi-cairo \
                  gir1.2-gtk-3.0 gir1.2-gdk-3.0 \
                  gir1.2-gio-2.0 gir1.2-gdkpixbuf-2.0
 
-pip3 install --user -e .
+pip3 install --user --break-system-packages -e .
+source ~/.profile
 startmenu-setup
 ```
 
@@ -83,5 +88,5 @@ All settings live in `~/.config/startmenu/settings.json` and are editable via th
 ## Updating
 
 ```bash
-pip3 install --user --upgrade git+https://github.com/NoeGarCou/startmenu.git
+pip3 install --user --break-system-packages --upgrade git+https://github.com/NoeGarCou/startmenu.git
 ```
