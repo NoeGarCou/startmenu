@@ -79,7 +79,7 @@ Set the command to `startmenu` and bind it to any key you like.
 
 ## Nemo context menu
 
-After running `python3 setup.py`, right-clicking any file or folder in the Nemo file manager shows **"Pin to StartMenu"**. If StartMenu is already running, the pin happens instantly. If it's not running, a small section-picker dialog appears and then the process exits.
+After running `python3 install.py`, right-clicking any file or folder in the Nemo file manager shows **"Pin to StartMenu"**. If StartMenu is already running, the pin happens instantly. If it's not running, a small section-picker dialog appears and then the process exits.
 
 ## Configuration
 

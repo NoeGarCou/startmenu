@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /home/n-linux/Projects/NMenu/pillmenu)",
+      "Bash(python3 -m py_compile pillmenu/config.py pillmenu/style.py pillmenu/app_source.py pillmenu/app_item.py pillmenu/app_grid.py pillmenu/window.py pillmenu/application.py pillmenu/__init__.py pillmenu/__main__.py)",
+      "Bash(python3 -m py_compile pillmenu/settings.py pillmenu/preferences.py pillmenu/config.py pillmenu/style.py pillmenu/app_grid.py pillmenu/window.py setup.py)",
+      "Bash(gsettings list-schemas *)",
+      "Bash(gsettings list-keys *)",
+      "Bash(xargs '-I{}' bash -c 'v=$\\(gsettings get org.cinnamon.desktop.keybindings.wm {}\\); echo \"{}: $v\"')",
+      "Bash(xargs '-I{}' bash -c 'v=$\\(gsettings get org.cinnamon.desktop.keybindings {}\\); echo \"{}: $v\"')",
+      "Bash(gsettings get *)",
+      "Bash(ls ~/.config/plank/)",
+      "Read(//home/n-linux/.config/plank/**)",
+      "Bash(cat > *)",
+      "Read(//home/n-linux/.local/share/applications/**)",
+      "Bash(gtk-query-imagesizes)",
+      "Read(//usr/share/icons/**)",
+      "Read(//home/n-linux/.local/share/icons/**)",
+      "Bash(bash /home/n-linux/Projects/NMenu/launch.sh)",
+      "Bash(echo \"launch exit: $?\")",
+      "Bash(xargs -I{} basename {} .svg)",
+      "Bash(sed -i 's/Icon=view-app-grid-symbolic/Icon=application-menu/' ~/.local/share/applications/pillmenu.desktop *)",
+      "Bash(pkill -f \"python3 -m pillmenu\")",
+      "Bash(python3 -m pillmenu)",
+      "Bash(desktop-file-validate ~/.local/share/applications/pillmenu.desktop)",
+      "Bash(echo \"validate exit: $?\")",
+      "Bash(gio launch *)",
+      "Bash(killall plank *)",
+      "Bash(plank)"
+    ],
+    "additionalDirectories": [
+      "/home/n-linux/Projects/NMenu",
+      "/home/n-linux/.config/plank/dock1/launchers",
+      "/home/n-linux/.local/share/applications"
+    ]
+  }
+}
