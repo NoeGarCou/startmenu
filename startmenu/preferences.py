@@ -214,7 +214,7 @@ class PreferencesDialog(Gtk.Dialog):
         g.attach(self._spin_close_ms, 1, 2, 1, 1)
 
         g.attach(self._lbl("Slide distance (px)"), 0, 3, 1, 1)
-        self._spin_slide = Gtk.SpinButton.new_with_range(0, 120, 1)
+        self._spin_slide = Gtk.SpinButton.new_with_range(0, 500, 1)
         self._spin_slide.set_value(settings.anim_slide_px)
         self._spin_slide.set_tooltip_text(
             "How far the window rises on open / falls on close. 0 = fade only."
