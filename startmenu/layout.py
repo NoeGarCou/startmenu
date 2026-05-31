@@ -60,8 +60,9 @@ class StartLayout(Gtk.Box):
 
     def apply_settings(self) -> None:
         self._app_list.set_size_request(settings.list_width, -1)
-        from .style import apply_size_css, apply_background_css
+        from .style import apply_size_css, apply_background_css, apply_border_css
         apply_background_css(settings)
+        apply_border_css(settings)
         apply_size_css(settings)
         self._app_list.rebuild()
         self._pinned_panel.refresh()

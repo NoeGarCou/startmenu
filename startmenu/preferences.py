@@ -155,6 +155,38 @@ class PreferencesDialog(Gtk.Dialog):
         )
         g.attach(self._scale_opacity, 1, 1, 1, 1)
 
+        g.attach(self._lbl("Border width (px)"), 0, 2, 1, 1)
+        self._spin_border_width = Gtk.SpinButton.new_with_range(0, 10, 1)
+        self._spin_border_width.set_value(settings.border_width)
+        self._spin_border_width.set_tooltip_text(
+            "Border thickness in pixels. 0 = no border."
+        )
+        g.attach(self._spin_border_width, 1, 2, 1, 1)
+
+        g.attach(self._lbl("Border colour"), 0, 3, 1, 1)
+        self._border_color_btn = Gtk.ColorButton()
+        self._border_color_btn.set_use_alpha(False)
+        self._border_color_btn.set_tooltip_text(
+            "Border colour (opacity is set separately)."
+        )
+        border_rgba = Gdk.RGBA()
+        border_rgba.parse(settings.border_color)
+        self._border_color_btn.set_rgba(border_rgba)
+        g.attach(self._border_color_btn, 1, 3, 1, 1)
+
+        g.attach(self._lbl("Border opacity"), 0, 4, 1, 1)
+        self._scale_border_alpha = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, 0.0, 1.0, 0.01
+        )
+        self._scale_border_alpha.set_value(settings.border_alpha)
+        self._scale_border_alpha.set_hexpand(True)
+        self._scale_border_alpha.set_draw_value(True)
+        self._scale_border_alpha.set_digits(3)
+        self._scale_border_alpha.set_tooltip_text(
+            "Alpha of the border. Plank default is ~0.039 (very subtle)."
+        )
+        g.attach(self._scale_border_alpha, 1, 4, 1, 1)
+
         return self._tab_wrap(g)
 
     def _build_sizes_tab(self) -> Gtk.Widget:
@@ -378,6 +410,7 @@ class PreferencesDialog(Gtk.Dialog):
             self._spin_tile_icon, self._spin_tile_font,
             self._spin_list_icon, self._spin_list_font, self._spin_section_font,
             self._spin_open_ms, self._spin_close_ms, self._spin_slide,
+            self._spin_border_width,
         ):
             spin.update()
 
@@ -394,6 +427,12 @@ class PreferencesDialog(Gtk.Dialog):
         r, g, b                     = int(rgba.red*255), int(rgba.green*255), int(rgba.blue*255)
         settings.background_color   = f"#{r:02x}{g:02x}{b:02x}"
         settings.background_opacity = round(self._scale_opacity.get_value(), 2)
+
+        settings.border_width       = int(self._spin_border_width.get_value())
+        border_rgba                 = self._border_color_btn.get_rgba()
+        br, bg, bb                  = int(border_rgba.red*255), int(border_rgba.green*255), int(border_rgba.blue*255)
+        settings.border_color       = f"#{br:02x}{bg:02x}{bb:02x}"
+        settings.border_alpha       = round(self._scale_border_alpha.get_value(), 3)
 
         # Sizes
         settings.tile_icon_size            = int(self._spin_tile_icon.get_value())

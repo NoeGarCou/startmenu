@@ -40,6 +40,9 @@ _DEFAULTS: dict = {
     "section_label_font_size": 10,
     "background_opacity": 0.97,
     "background_color": "#1c1c28",
+    "border_width": 1,
+    "border_color": "#ffffff",
+    "border_alpha": 0.039,
     "anim_enabled": True,
     "anim_open_ms": 224,
     "anim_close_ms": 160,
@@ -62,6 +65,9 @@ class Settings:
     section_label_font_size: int = 10
     background_opacity: float = 0.97
     background_color: str = "#1c1c28"
+    border_width: int = 1
+    border_color: str = "#ffffff"
+    border_alpha: float = 0.039
     anim_enabled: bool = True
     anim_open_ms: int = 224
     anim_close_ms: int = 160

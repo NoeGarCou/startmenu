@@ -311,7 +311,29 @@ scrollbar slider:hover {
 """
 
 
-_bg_provider = None
+_bg_provider     = None
+_border_provider = None
+
+
+def apply_border_css(s) -> None:
+    global _border_provider
+    hex_col = s.border_color.lstrip("#")
+    r = int(hex_col[0:2], 16)
+    g = int(hex_col[2:4], 16)
+    b = int(hex_col[4:6], 16)
+    if s.border_width > 0:
+        border = f"{s.border_width}px solid rgba({r}, {g}, {b}, {s.border_alpha:.3f})"
+    else:
+        border = "none"
+    css = f"#start-container {{ border: {border}; }}".encode()
+    if _border_provider is None:
+        _border_provider = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            _border_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+        )
+    _border_provider.load_from_data(css)
 
 
 def apply_background_css(s) -> None:
@@ -345,6 +367,7 @@ def apply_css() -> None:
 
     from .settings import settings as _s
     apply_background_css(_s)
+    apply_border_css(_s)
     apply_size_css(_s)
 
 
