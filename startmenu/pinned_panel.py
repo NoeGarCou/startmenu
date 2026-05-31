@@ -711,6 +711,7 @@ class PinnedPanel(Gtk.Box):
 
         self._content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         self._content_box.set_hexpand(True)
+        self._content_box.set_margin_end(10)
         self._populate()
 
         scrolled.add(self._content_box)
